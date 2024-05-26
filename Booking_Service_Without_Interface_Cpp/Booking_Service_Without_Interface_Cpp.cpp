@@ -5,7 +5,7 @@
 #include <vector>
 #include <iomanip>
 #include <ctime>
-#include <tuple> // 
+#include <tuple> 
 
 #define IDC_BOOK_BUTTON 1001
 #define IDC_CATEGORY_COMBOBOX 1002
@@ -16,35 +16,43 @@
 
 HINSTANCE g_hInst;
 
-class DateSelection {
+using namespace std;
+
+
+class DateSelection 
+{
 private:
     HWND hwnd_date_time_picker_;
 
 public:
-    DateSelection(HWND hwnd_parent, int x, int y) {
+    DateSelection(HWND hwnd_parent, int x, int y) 
+    {
         hwnd_date_time_picker_ = CreateWindowEx(0, DATETIMEPICK_CLASS, NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | DTS_SHORTDATEFORMAT,
             x, y, 200, 30, hwnd_parent, NULL, NULL, NULL);
     }
 
-    SYSTEMTIME get_system_time() {
+    SYSTEMTIME get_system_time() 
+    {
         SYSTEMTIME st;
         SendMessage(hwnd_date_time_picker_, DTM_GETSYSTEMTIME, 0, (LPARAM)&st);
         return st;
     }
 
-    std::wstring select_date() {
+    wstring select_date() 
+    {
         SYSTEMTIME st = get_system_time();
-        std::wstringstream ss;
-        ss << std::setw(2) << std::setfill(L'0') << st.wDay << L"/"
-            << std::setw(2) << std::setfill(L'0') << st.wMonth << L"/"
+        wstringstream ss;
+        ss << setw(2) << setfill(L'0') << st.wDay << L"/"
+            << setw(2) << setfill(L'0') << st.wMonth << L"/"
             << st.wYear;
         return ss.str();
     }
 };
 
-class BookingManager {
+class BookingManager 
+{
 private:
-    std::vector<std::tuple<std::wstring, std::wstring, std::wstring, std::wstring>> bookings_;
+    vector<tuple<wstring, wstring, wstring, wstring>> bookings_;
     HWND hwnd_;
     HWND g_h_destination_edit;
     HWND g_h_total_cost_label;
@@ -53,34 +61,27 @@ private:
     DateSelection* to_date_selection_;
     double total_cost_ = 0.0;
 
-    double calculate_cost(const std::wstring& category, int days) {
-        if (category == L"Отель") {
-            return 30000.0 * days;
-        }
-        else if (category == L"Авиабилет") {
-            return 20000.0 * days;
-        }
-        else if (category == L"Тур") {
-            return 5000.0 * days;
-        }
-        else if (category == L"Ресторан") {
-            return 1800.0 * days;
-        }
-        else if (category == L"Автомобиль") {
-            return 2000.0 * days;
-        }
+    double calculate_cost(const wstring& category, int days) 
+    {
+        if (category == L"Отель") {return 30000.0 * days;}
+        else if (category == L"Авиабилет") {return 20000.0 * days;}
+        else if (category == L"Тур") {return 5000.0 * days;}
+        else if (category == L"Ресторан") {return 1800.0 * days;}
+        else if (category == L"Автомобиль") {return 2000.0 * days;}
         return 0.0;
     }
 
 public:
     BookingManager(HWND hwnd) : hwnd_(hwnd), from_date_selection_(nullptr), to_date_selection_(nullptr) {}
 
-    ~BookingManager() {
+    ~BookingManager() 
+    {
         delete from_date_selection_;
         delete to_date_selection_;
     }
 
-    void init_ui() {
+    void init_ui() 
+    {
         CreateWindowEx(0, L"STATIC", L"Введите город для отдыха:", WS_CHILD | WS_VISIBLE,
             10, 10, 200, 20, hwnd_, NULL, g_hInst, NULL);
 
@@ -120,29 +121,31 @@ public:
             210, 220, 200, 30, hwnd_, NULL, g_hInst, NULL);
     }
 
-    int calculate_days(SYSTEMTIME from, SYSTEMTIME to) {
-        std::tm tm_from = { 0, from.wMinute, from.wHour, from.wDay, from.wMonth - 1, from.wYear - 1900 };
-        std::tm tm_to = { 0, to.wMinute, to.wHour, to.wDay, to.wMonth - 1, to.wYear - 1900 };
-        auto time_from = std::mktime(&tm_from);
-        auto time_to = std::mktime(&tm_to);
-        int difference = std::difftime(time_to, time_from) / (60 * 60 * 24);
+    int calculate_days(SYSTEMTIME from, SYSTEMTIME to) 
+    {
+        tm tm_from = { 0, from.wMinute, from.wHour, from.wDay, from.wMonth - 1, from.wYear - 1900 };
+        tm tm_to = { 0, to.wMinute, to.wHour, to.wDay, to.wMonth - 1, to.wYear - 1900 };
+        auto time_from = mktime(&tm_from);
+        auto time_to = mktime(&tm_to);
+        int difference = difftime(time_to, time_from) / (60 * 60 * 24);
         return (difference > 0) ? difference : 1;
     }
 
     void book() {
         wchar_t destination[256];
         SendMessage(g_h_destination_edit, WM_GETTEXT, sizeof(destination), reinterpret_cast<LPARAM>(destination));
-        std::wstring selected_destination = std::wstring(destination);
+        wstring selected_destination = wstring(destination);
 
         int index = SendMessage(g_h_category_combo_box, CB_GETCURSEL, 0, 0);
-        if (index == CB_ERR) {
+        if (index == CB_ERR) 
+        {
             MessageBoxW(NULL, L"Пожалуйста, выберите категорию.", L"Ошибка", MB_OK | MB_ICONERROR);
             return;
         }
 
-        std::wstring category = get_category_from_index(index);
-        std::wstring from_date = from_date_selection_->select_date();
-        std::wstring to_date = to_date_selection_->select_date();
+        wstring category = get_category_from_index(index);
+        wstring from_date = from_date_selection_->select_date();
+        wstring to_date = to_date_selection_->select_date();
 
         SYSTEMTIME from_system_time = from_date_selection_->get_system_time();
         SYSTEMTIME to_system_time = to_date_selection_->get_system_time();
@@ -151,17 +154,18 @@ public:
         double cost = calculate_cost(category, days);
 
         total_cost_ += cost;
-        bookings_.push_back(std::make_tuple(category, selected_destination, from_date, to_date));
+        bookings_.push_back(make_tuple(category, selected_destination, from_date, to_date));
 
-        std::wstringstream total_cost_ss;
-        total_cost_ss << std::fixed << std::setprecision(2) << total_cost_;
+        wstringstream total_cost_ss;
+        total_cost_ss << fixed << setprecision(2) << total_cost_;
         SetWindowTextW(g_h_total_cost_label, (L"Общая стоимость: " + total_cost_ss.str() + L" руб.").c_str());
 
         MessageBoxW(NULL, (category + L" забронирован для направления: " + selected_destination + L". С: " + from_date + L". По: " + to_date).c_str(),
             L"Бронирование", MB_OK | MB_ICONINFORMATION);
     }
 
-    std::wstring get_category_from_index(int index) {
+    wstring get_category_from_index(int index) 
+    {
         switch (index) {
         case 0: return L"Отель";
         case 1: return L"Авиабилет";
@@ -172,16 +176,18 @@ public:
         }
     }
 
-    void show_table() {
+    void show_table() 
+    {
         HWND hwnd_table = CreateWindowEx(WS_EX_APPWINDOW, L"BookingsTable", L"Таблица бронирований", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT, CW_USEDEFAULT, 500, 300, hwnd_, NULL, g_hInst, NULL);
 
         ShowWindow(hwnd_table, SW_SHOW);
         UpdateWindow(hwnd_table);
 
-        std::wstringstream ss;
-        for (const auto& booking : bookings_) {
-            ss << std::get<0>(booking) << L": " << std::get<1>(booking) << L" с " << std::get<2>(booking) << L" по " << std::get<3>(booking) << L"\n";
+        wstringstream ss;
+        for (const auto& booking : bookings_) 
+        {
+            ss << get<0>(booking) << L": " << get<1>(booking) << L" с " << get<2>(booking) << L" по " << get<3>(booking) << L"\n";
         }
 
         HWND h_edit = CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", ss.str().c_str(),
@@ -189,14 +195,15 @@ public:
             10, 10, 460, 240, hwnd_table, NULL, g_hInst, NULL);
     }
 
-    void show_prices() {
+    void show_prices() 
+    {
         HWND hwnd_prices = CreateWindowEx(WS_EX_APPWINDOW, L"PricesList", L"Список цен", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT, CW_USEDEFAULT, 300, 200, hwnd_, NULL, g_hInst, NULL);
 
         ShowWindow(hwnd_prices, SW_SHOW);
         UpdateWindow(hwnd_prices);
 
-        std::wstringstream ss;
+        wstringstream ss;
         ss << L"Отель: 30000 руб. в день\n";
         ss << L"Авиабилет: 20000 руб. в день\n";
         ss << L"Тур: 5000 руб. в день\n";
@@ -239,7 +246,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_par
     return DefWindowProc(hwnd, u_msg, w_param, l_param);
 }
 
-LRESULT CALLBACK child_window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK child_window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) 
+{
     switch (u_msg) {
     case WM_CLOSE:
         DestroyWindow(hwnd);
@@ -251,7 +259,8 @@ LRESULT CALLBACK child_window_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM
     return DefWindowProc(hwnd, u_msg, w_param, l_param);
 }
 
-int WINAPI WinMain(HINSTANCE h_instance, HINSTANCE h_prev_instance, LPSTR lp_cmd_line, int n_cmd_show) {
+int WINAPI WinMain(HINSTANCE h_instance, HINSTANCE h_prev_instance, LPSTR lp_cmd_line, int n_cmd_show) 
+{
     g_hInst = h_instance;
 
     WNDCLASS wc = { 0 };
@@ -274,7 +283,8 @@ int WINAPI WinMain(HINSTANCE h_instance, HINSTANCE h_prev_instance, LPSTR lp_cmd
     UpdateWindow(hwnd);
 
     MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
+    while (GetMessage(&msg, NULL, 0, 0)) 
+    {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
